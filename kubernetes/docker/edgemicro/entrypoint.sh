@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 APIGEE_ROOT="/opt/apigee"
 EDGEMICRO_PLUGIN_DIRECTORY="/opt/apigee/plugins"
 
@@ -8,13 +7,9 @@ EDGEMICRO_PLUGIN_DIRECTORY="/opt/apigee/plugins"
 LOG_FILE=${APIGEE_ROOT}/logs/edgemicro.log
 echo "Log Location: [ $LOG_FILE ]"
 echo "SIGTERM delay : [ $EDGEMICRO_STOP_DELAY ]"
-PID_FILE=edgemicro.pid
-SOCK_FILE=edgemicro.sock
-
-IFS=
 
 start_edge_micro() {
-
+  
   if  [[ -n "$SERVICE_NAME" ]]
     then
           SERVICE_NAME="default"
@@ -63,7 +58,7 @@ start_edge_micro() {
   BACKGROUND=" &"
   MGSTART=" edgemicro start -o $EDGEMICRO_ORG -e $EDGEMICRO_ENV -k $EDGEMICRO_KEY -s $EDGEMICRO_SECRET -r $EDGEMICRO_PORT -d $EDGEMICRO_PLUGIN_DIRECTORY"
   LOCALPROXY=" export EDGEMICRO_LOCAL_PROXY=$EDGEMICRO_LOCAL_PROXY "
-  MGDIR="cd ${APIGEE_ROOT} "
+  MGDIR="${APIGEE_ROOT} "
   DECORATOR=" export EDGEMICRO_DECORATOR=$EDGEMICRO_DECORATOR "
   DEBUG=" export DEBUG=$DEBUG "
   EDGEMICRO_PROXY=""
@@ -113,26 +108,29 @@ start_edge_micro() {
   if [[ -n "$EDGEMICRO_LOCAL_PROXY" ]]
     then
     DECORATOR=" export EDGEMICRO_DECORATOR=1 "
-    CMDSTRING="$MGDIR && $DECORATOR &&  $LOCALPROXY && $MGSTART -a $PROXY_NAME -v 1 -b / -t http://localhost:$TARGET_PORT  $BACKGROUND"
+    CMDSTRING="$DECORATOR &&  $LOCALPROXY && $MGSTART -a $PROXY_NAME -v 1 -b / -t http://localhost:$TARGET_PORT  $BACKGROUND"
   else
-    CMDSTRING="$MGDIR && $MGSTART $BACKGROUND"
+    CMDSTRING="$MGSTART $BACKGROUND"
   fi
 
   if [[ -n "$DEBUG" ]]
     then
-    exec /bin/bash -c "$DEBUG && $CMDSTRING"
+    /bin/bash -c "$DEBUG && $CMDSTRING"
   else
-    exec /bin/bash -c "$CMDSTRING"
+    /bin/bash -c "$CMDSTRING"
   fi
 
   echo $CMDSTRING
 }
 
-CON3=$(echo $EDGEMICRO_CONFIG | base64 -d | grep -Eo 'to_console: (true|True|TRUE)')
-
-if [[ -n "$CON3" ]]
+if [[ -n "$LOG_CONSOLE_OUTPUT_TO_FILE"  ]]
   then
-    start_edge_micro  2>&1
+    if [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "false" ] || [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "False" ] || [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "FALSE" ]
+      then
+        start_edge_micro  2>&1
+      else
+        start_edge_micro  2>&1 | tee -i $LOG_FILE
+    fi
   else
     start_edge_micro  2>&1 | tee -i $LOG_FILE
 fi
@@ -140,11 +138,17 @@ fi
 # SIGUSR1-handler
 my_handler() {
   echo "my_handler" >> /tmp/entrypoint.log
-  if [[ -n "$CON3" ]]
+
+  if [[ -n "$LOG_CONSOLE_OUTPUT_TO_FILE"  ]]
     then
-      /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1
+      if [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "false" ] || [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "False" ] || [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "FALSE" ]
+        then
+          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1
+        else
+          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1  | tee -i $LOG_FILE
+      fi
     else
-      /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1
+          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1  | tee -i $LOG_FILE
   fi
 }
 
@@ -161,27 +165,25 @@ term_handler() {
     sleep $EDGEMICRO_STOP_DELAY
   fi
 
-  if [[ -n "$CON3" ]]
+  if [[ -n "$LOG_CONSOLE_OUTPUT_TO_FILE"  ]]
     then
-      /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1
+      if [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "false" ] || [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "False" ] || [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "FALSE" ]
+        then
+          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop"  2>&1
+        else
+          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop"  2>&1 | tee -i $LOG_FILE
+      fi
     else
       /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop"  2>&1 | tee -i $LOG_FILE
   fi
-
+  
   exit 143; # 128 + 15 -- SIGTERM
-}
-
-#SIGINT handler
-sigint_handler(){
-  echo "sigint_handler" >> /tmp/entrypoint.log
-  /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1
 }
 
 # setup handlers
 # on callback, kill the last background process, which is `tail -f /dev/null` and execute the specified handler
-#trap 'kill ${!}; my_handler' SIGUSR1
-#trap 'kill ${!}; term_handler' SIGTERM
-#trap 'sigint_handler' SIGINT SIGQUIT SIGHUP
+trap 'kill ${!}; my_handler' SIGUSR1
+trap 'kill ${!}; term_handler' SIGTERM
 
 while true
 do
