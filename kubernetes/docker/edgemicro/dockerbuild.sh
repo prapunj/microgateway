@@ -24,5 +24,5 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # fi
 
-docker build -t edgemicro_local $DIR
+docker build --no-cache -t edgemicro_local $DIR
 

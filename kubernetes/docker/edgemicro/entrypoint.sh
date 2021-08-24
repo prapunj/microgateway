@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 APIGEE_ROOT="/opt/apigee"
 EDGEMICRO_PLUGIN_DIRECTORY="/opt/apigee/plugins"
 
@@ -7,11 +8,13 @@ EDGEMICRO_PLUGIN_DIRECTORY="/opt/apigee/plugins"
 LOG_FILE=${APIGEE_ROOT}/logs/edgemicro.log
 echo "Log Location: [ $LOG_FILE ]"
 echo "SIGTERM delay : [ $EDGEMICRO_STOP_DELAY ]"
+PID_FILE=edgemicro.pid
+SOCK_FILE=edgemicro.sock
 
 IFS=
 
 start_edge_micro() {
-  
+
   if  [[ -n "$SERVICE_NAME" ]]
     then
           SERVICE_NAME="default"
@@ -117,9 +120,9 @@ start_edge_micro() {
 
   if [[ -n "$DEBUG" ]]
     then
-    /bin/bash -c "$DEBUG && $CMDSTRING"
+    exec /bin/bash -c "$DEBUG && $CMDSTRING"
   else
-    /bin/bash -c "$CMDSTRING"
+    exec /bin/bash -c "$CMDSTRING"
   fi
 
   echo $CMDSTRING
@@ -141,7 +144,7 @@ my_handler() {
     then
       /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1
     else
-      /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1  | tee -i $LOG_FILE
+      /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1
   fi
 }
 
@@ -168,10 +171,17 @@ term_handler() {
   exit 143; # 128 + 15 -- SIGTERM
 }
 
+#SIGINT handler
+sigint_handler(){
+  echo "sigint_handler" >> /tmp/entrypoint.log
+  /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1
+}
+
 # setup handlers
 # on callback, kill the last background process, which is `tail -f /dev/null` and execute the specified handler
-trap 'kill ${!}; my_handler' SIGUSR1
-trap 'kill ${!}; term_handler' SIGTERM
+#trap 'kill ${!}; my_handler' SIGUSR1
+#trap 'kill ${!}; term_handler' SIGTERM
+#trap 'sigint_handler' SIGINT SIGQUIT SIGHUP
 
 while true
 do
