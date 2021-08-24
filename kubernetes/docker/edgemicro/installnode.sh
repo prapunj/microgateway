@@ -3,7 +3,7 @@ set echo off
 
 
 cd /opt/apigee
-git clone -b docker-dev-setup https://github.com/sumitparakh/microgateway.git
+git clone -b docker-dev-setup https://github.com/prapunj/microgateway.git
 cd microgateway
 npm install
 npm link
