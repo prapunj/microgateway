@@ -128,12 +128,12 @@ if [[ -n "$LOG_CONSOLE_OUTPUT_TO_FILE"  ]]
   then
     if [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "false" ] || [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "False" ] || [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "FALSE" ]
       then
-        start_edge_micro  2>&1
+        start_edge_micro  2>&1 &
       else
-        start_edge_micro  exec 2>&1 | tee $LOG_FILE
+        start_edge_micro  2>&1 | tee -i $LOG_FILE &
     fi
   else
-    start_edge_micro  exec 2>&1 | tee $LOG_FILE
+    start_edge_micro 2>&1 | tee -i $LOG_FILE &
 fi
 
 # SIGUSR1-handler
@@ -144,12 +144,12 @@ my_handler() {
     then
       if [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "false" ] || [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "False" ] || [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "FALSE" ]
         then
-          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1
+          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1 &
         else
-          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" exec 2>&1  | tee $LOG_FILE
+          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1  | tee $LOG_FILE &
       fi
     else
-          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" exec 2>&1  | tee $LOG_FILE
+          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1  | tee $LOG_FILE &
   fi
 }
 
@@ -170,12 +170,12 @@ term_handler() {
     then
       if [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "false" ] || [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "False" ] || [ "$LOG_CONSOLE_OUTPUT_TO_FILE" = "FALSE" ]
         then
-          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop"  2>&1
+          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop"  2>&1 &
         else
-          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop"  exec 2>&1 | tee $LOG_FILE
+          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1 | tee $LOG_FILE &
       fi
     else
-      /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" exec 2>&1 | tee $LOG_FILE
+      /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1 | tee $LOG_FILE &
   fi
   
   exit 143; # 128 + 15 -- SIGTERM
