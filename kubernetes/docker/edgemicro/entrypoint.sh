@@ -130,10 +130,10 @@ if [[ -n "$LOG_CONSOLE_OUTPUT_TO_FILE"  ]]
       then
         start_edge_micro  2>&1
       else
-        start_edge_micro  2>&1 | tee $LOG_FILE
+        start_edge_micro  2>&1 | (exec tee $LOG_FILE)
     fi
   else
-    start_edge_micro  2>&1 | tee $LOG_FILE
+    start_edge_micro  2>&1 | (exec tee $LOG_FILE)
 fi
 
 # SIGUSR1-handler
@@ -146,10 +146,10 @@ my_handler() {
         then
           /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1
         else
-          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1  | tee $LOG_FILE
+          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1  | (exec tee $LOG_FILE)
       fi
     else
-          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1  | tee $LOG_FILE
+          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop" 2>&1  | (exec tee $LOG_FILE)
   fi
 }
 
@@ -172,10 +172,10 @@ term_handler() {
         then
           /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop"  2>&1
         else
-          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop"  2>&1 | tee $LOG_FILE
+          /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop"  2>&1 | (exec tee $LOG_FILE)
       fi
     else
-      /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop"  2>&1 | tee $LOG_FILE
+      /bin/bash -c "cd ${APIGEE_ROOT} && edgemicro stop"  2>&1 | (exec tee $LOG_FILE)
   fi
   
   exit 143; # 128 + 15 -- SIGTERM
